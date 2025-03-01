@@ -7,7 +7,7 @@ const LiveMap: React.FC = () => {
     <div className="live-map">
       <h3>Live Monitoring</h3>
       {/* <p>Map Integration Coming Soon...</p> */}
-      <MapView/>
+      {/* <MapView/> */}
     </div>
   );
 };

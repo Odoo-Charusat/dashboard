@@ -1,42 +1,100 @@
-.dashboard {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    width: 75vw;
-    background: rgba(255, 255, 255, 0.1);  
-    color: white;
-    padding: 20px;
-    box-sizing: border-box;
-  }
-  
-  .dashboard h1 {
-    text-align: center;
-    font-size: 24px;
-    margin-bottom: 20px;
-  }
-  
+/* .dashboard {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 75vw;
+  background: rgba(255, 255, 255, 0.1);  
+  color: white;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.dashboard h1 {
+  text-align: center;
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.dashboard-content {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: 20px;
+  padding: 20px;
+  overflow: hidden;
+}
+
+@media (min-width: 788px) {
   .dashboard-content {
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-    gap: 20px;
-    padding: 20px;
-    overflow: hidden;
+    flex-direction: row; 
+    justify-content: space-around;
   }
-  
-  @media (min-width: 788px) {
-    .dashboard-content {
-      flex-direction: row; 
-      justify-content: space-around;
-    }
+}
+
+.dashboard-content > div {
+  flex: 1;
+  min-width: 300px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.1); 
+  border-radius: 10px;
+  padding: 20px;
+} */
+
+
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 75vw;
+  background: rgba(255, 255, 255, 0.1);  
+  color: white;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.dashboard h1 {
+  text-align: center;
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.dashboard-content {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: 20px;
+  padding: 20px;
+  overflow: auto; /* Changed from hidden to auto */
+}
+
+@media (min-width: 788px) {
+  .dashboard-content {
+    flex-direction: row; 
+    justify-content: space-around;
   }
-  
-  .dashboard-content > div {
-    flex: 1;
-    min-width: 300px;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.1); 
-    border-radius: 10px;
-    padding: 20px;
-  }
-  
+}
+
+.dashboard-content > div {
+  flex: 1;
+  min-width: 300px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.1); 
+  border-radius: 10px;
+  padding: 20px;
+  overflow: auto; /* Ensures all content is visible */
+}
+
+.sensor-data {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.sensor-text {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-size: 14px;
+  color: #ddd;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 10px;
+  border-radius: 5px;
+}

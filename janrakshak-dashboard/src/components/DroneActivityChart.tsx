@@ -20,7 +20,7 @@ const DroneActivityChart: React.FC = () => {
 
   return (
     <div className="chart-container">
-      <h3>Drone Activity</h3>
+      <h3>Seismograph</h3>
       <Line data={data} />
     </div>
   );
