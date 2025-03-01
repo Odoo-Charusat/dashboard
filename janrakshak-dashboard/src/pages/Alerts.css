@@ -39,3 +39,13 @@
     border-radius: 10px;
     padding: 20px;
 }
+
+.alert-warning {
+    color: red;
+    font-weight: bold;
+    padding: 10px;
+    background: rgba(255, 0, 0, 0.1);
+    border-left: 5px solid red;
+    margin-top: 10px;
+  }
+  

@@ -337,6 +337,8 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const { S3Client, GetObjectCommand, ListObjectsV2Command } = require("@aws-sdk/client-s3");
 const streamToString = require("stream-to-string");
+const { NodeHttpHandler } = require("@smithy/node-http-handler"); 
+const https = require("https");
 
 dotenv.config();
 
@@ -345,35 +347,60 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 
+const agent = new https.Agent({
+  rejectUnauthorized: false, // Ignore self-signed certificate errors
+});
+
 const s3 = new S3Client({
   region: process.env.AWS_REGION,
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-  }
+  },
+  requestHandler: new NodeHttpHandler({ httpsAgent: agent }),
 });
 
-const BUCKET_NAME = process.env.AWS_S3_BUCKET;
+const BUCKET_NAME = "earthquake-sensor"; // Your S3 bucket name
+const FOLDER_PREFIX = "data/"; // Folder inside the bucket
 
-let latestData = null; // Store raw file content
+let fileList = []; // List of all files in S3
+let latestData = null; // Latest fetched file content
+let fileIndex = 0; // Tracks which file to fetch next
 
-// Function to Fetch Latest File from S3
-async function fetchLatestFile() {
+// Function to Fetch File List from 'data/' Folder
+async function fetchFileList() {
   try {
     console.log("⏳ Fetching file list from S3...");
-    const listParams = { Bucket: BUCKET_NAME };
-    const fileList = await s3.send(new ListObjectsV2Command(listParams));
+    const listParams = { Bucket: BUCKET_NAME, Prefix: FOLDER_PREFIX };
+    const response = await s3.send(new ListObjectsV2Command(listParams));
 
-    if (!fileList.Contents || fileList.Contents.length === 0) {
-      console.log("❌ No files found in the S3 bucket.");
-      latestData = "No files found";
+    if (!response.Contents || response.Contents.length === 0) {
+      console.log("❌ No files found in the S3 folder.");
+      fileList = [];
       return;
     }
 
-    const latestFile = fileList.Contents.sort((a, b) => b.LastModified - a.LastModified)[0].Key;
-    console.log("📂 Fetching latest file:", latestFile);
+    fileList = response.Contents.map(file => file.Key);
+    console.log(`📂 Found ${fileList.length} files.`);
+  } catch (error) {
+    console.error("❌ Error fetching file list:", error);
+    fileList = [];
+  }
+}
 
-    const getParams = { Bucket: BUCKET_NAME, Key: latestFile };
+// Function to Fetch Data from a Different File Every 10s
+async function fetchNextFile() {
+  try {
+    if (fileList.length === 0) {
+      console.log("⚠️ No files available to fetch.");
+      return;
+    }
+
+    // Get the next file in sequence (loops back after last file)
+    const fileToFetch = fileList[fileIndex];
+    console.log("📂 Fetching file:", fileToFetch);
+
+    const getParams = { Bucket: BUCKET_NAME, Key: fileToFetch };
     const response = await s3.send(new GetObjectCommand(getParams));
 
     if (!response.Body) {
@@ -382,16 +409,23 @@ async function fetchLatestFile() {
       return;
     }
 
-    latestData = await streamToString(response.Body); // Store raw content
-    console.log("✅ File fetched successfully!");
-    
+    latestData = await streamToString(response.Body);
+    console.log(`✅ File ${fileIndex + 1}/${fileList.length} fetched successfully!`);
+
+    // Move to next file, loop back after last file
+    fileIndex = (fileIndex + 1) % fileList.length;
   } catch (error) {
     console.error("❌ Error fetching file:", error);
     latestData = `Error: ${error.message}`;
   }
 }
 
-// Route to Get Raw Data
+// Route to Get File List from 'data/' Folder
+app.get("/api/files", (req, res) => {
+  res.json({ files: fileList });
+});
+
+// Route to Get Latest Fetched File Data
 app.get("/api/data", (req, res) => {
   if (!latestData) {
     return res.status(500).send("No data available yet");
@@ -399,9 +433,11 @@ app.get("/api/data", (req, res) => {
   res.send(latestData);
 });
 
-// Fetch Data Immediately and Every 10s
-fetchLatestFile().then(() => {
-  setInterval(fetchLatestFile, 10000);
+// Fetch File List on Startup and Every 10s
+fetchFileList().then(() => {
+  fetchNextFile();
+  setInterval(fetchFileList, 10000);
+  setInterval(fetchNextFile, 10000);
 });
 
 app.listen(PORT, () => {

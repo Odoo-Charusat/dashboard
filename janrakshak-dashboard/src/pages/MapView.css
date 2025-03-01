@@ -30,7 +30,7 @@
 .leaflet-container {
     flex-grow: 1;
     width: 75vw;
-    height: 100vh;
+    height: 50vh;
     border-radius: 10px;
 }
 
