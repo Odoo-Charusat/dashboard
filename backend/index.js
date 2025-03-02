@@ -330,13 +330,161 @@
 
 
 
+//the below code exceeded the message limit
+
+// const express = require("express");
+// const dotenv = require("dotenv");
+// const cors = require("cors");
+// const { S3Client, GetObjectCommand, ListObjectsV2Command } = require("@aws-sdk/client-s3");
+// const streamToString = require("stream-to-string");
+// const { NodeHttpHandler } = require("@smithy/node-http-handler");
+// const https = require("https");
+// const twilio = require("twilio");
+
+// dotenv.config();
+
+// const app = express();
+// const PORT = process.env.PORT || 5000;
+
+// app.use(cors());
+
+// const agent = new https.Agent({
+//   rejectUnauthorized: false, // Ignore self-signed certificate errors
+// });
+
+// // ✅ AWS S3 Client Setup
+// const s3 = new S3Client({
+//   region: process.env.AWS_REGION,
+//   credentials: {
+//     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+//     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+//   },
+//   requestHandler: new NodeHttpHandler({ httpsAgent: agent }),
+// });
+
+// const BUCKET_NAME = "earthquake-sensor";
+// const FOLDER_PREFIX = "real-data/";
+
+// let fileList = [];
+// let latestData = null;
+// let fileIndex = 0;
+
+// // ✅ Twilio Client Setup
+// const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+// const SOS_NUMBER = process.env.SOS_PHONE_NUMBER; // Dummy number to send alerts
+
+// // 🔹 Fetch File List from S3
+// async function fetchFileList() {
+//   try {
+//     console.log("⏳ Fetching file list from S3...");
+//     const listParams = { Bucket: BUCKET_NAME, Prefix: FOLDER_PREFIX };
+//     const response = await s3.send(new ListObjectsV2Command(listParams));
+
+//     if (!response.Contents || response.Contents.length === 0) {
+//       console.log("❌ No files found in the S3 folder.");
+//       fileList = [];
+//       return;
+//     }
+
+//     fileList = response.Contents.map(file => file.Key);
+//     console.log(`📂 Found ${fileList.length} files.`);
+//   } catch (error) {
+//     console.error("❌ Error fetching file list:", error);
+//     fileList = [];
+//   }
+// }
+
+// // 🔹 Fetch Latest File Data & Send Alert If Needed
+// async function fetchNextFile() {
+//   try {
+//     if (fileList.length === 0) {
+//       console.log("⚠️ No files available to fetch.");
+//       return;
+//     }
+
+//     const fileToFetch = fileList[fileIndex];
+//     console.log("📂 Fetching file:", fileToFetch);
+
+//     const getParams = { Bucket: BUCKET_NAME, Key: fileToFetch };
+//     const response = await s3.send(new GetObjectCommand(getParams));
+
+//     if (!response.Body) {
+//       console.error("❌ Error: Empty file response from S3.");
+//       latestData = "Empty file";
+//       return;
+//     }
+
+//     const fileContent = await streamToString(response.Body);
+//     latestData = JSON.parse(fileContent); // Assuming JSON format
+
+//     console.log(`✅ File ${fileIndex + 1}/${fileList.length} fetched successfully!`);
+    
+//     // ✅ Extract IIF & Location
+//     const iif = latestData.iif || 0;
+//     const location = latestData.location || "Unknown";
+
+//     // 🚨 Send SOS if IIF > 2
+//     if (iif > 2) {
+//       await sendSOSAlert(iif, location);
+//     }
+
+//     fileIndex = (fileIndex + 1) % fileList.length;
+//   } catch (error) {
+//     console.error("❌ Error fetching file:", error);
+//     latestData = { error: error.message };
+//   }
+// }
+
+// // 🚨 Send SOS Alert via Twilio
+// async function sendSOSAlert(iif, location) {
+//   try {
+//     const messageBody = `🚨 SOS Alert! High IIF Detected: ${iif} at Location: ${location}. Take Immediate Action!`;
+    
+//     const message = await twilioClient.messages.create({
+//       body: messageBody,
+//       from: process.env.TWILIO_PHONE_NUMBER, // Your Twilio number
+//       to: SOS_NUMBER // Alert recipient
+//     });
+
+//     console.log("✅ SOS Alert Sent Successfully:", message.sid);
+//   } catch (error) {
+//     console.error("❌ Failed to send SOS alert:", error);
+//   }
+// }
+
+// // ✅ API Routes
+// app.get("/api/files", (req, res) => {
+//   res.json({ files: fileList });
+// });
+
+// app.get("/api/data", (req, res) => {
+//   if (!latestData) {
+//     return res.status(500).send("No data available yet");
+//   }
+//   res.json(latestData);
+// });
+
+// // ✅ Start Fetching Data
+// fetchFileList().then(() => {
+//   fetchNextFile();
+//   setInterval(fetchFileList, 10000);
+//   setInterval(fetchNextFile, 10000);
+// });
+
+// app.listen(PORT, () => {
+//   console.log(`🚀 Server running on port ${PORT}`);
+// });
+
 
 
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const { S3Client, GetObjectCommand, ListObjectsV2Command } = require("@aws-sdk/client-s3");
+const AWS = require("aws-sdk");
 const streamToString = require("stream-to-string");
+const { NodeHttpHandler } = require("@smithy/node-http-handler"); 
+const https = require("https");
 
 dotenv.config();
 
@@ -345,53 +493,122 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 
+// 🔹 AWS SNS Setup
+const sns = new AWS.SNS({
+  region: process.env.AWS_REGION,
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+});
+
+// 🔹 S3 Setup
+const agent = new https.Agent({
+  rejectUnauthorized: false,
+});
+
 const s3 = new S3Client({
   region: process.env.AWS_REGION,
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-  }
+  },
+  requestHandler: new NodeHttpHandler({ httpsAgent: agent }),
 });
 
-const BUCKET_NAME = process.env.AWS_S3_BUCKET;
+const BUCKET_NAME = "earthquake-sensor"; 
+const FOLDER_PREFIX = "real-data/"; 
 
-let latestData = null; // Store raw file content
+let fileList = [];
+let latestData = null; 
+let fileIndex = 0;
 
-// Function to Fetch Latest File from S3
-async function fetchLatestFile() {
+// 🔹 Message Rate Limit (Send 1 SMS per hour)
+let lastSentTime = 0;
+const MESSAGE_INTERVAL = 60 * 60 * 1000; // 1 hour
+
+// 🔹 Fetch File List from S3
+async function fetchFileList() {
   try {
     console.log("⏳ Fetching file list from S3...");
-    const listParams = { Bucket: BUCKET_NAME };
-    const fileList = await s3.send(new ListObjectsV2Command(listParams));
+    const listParams = { Bucket: BUCKET_NAME, Prefix: FOLDER_PREFIX };
+    const response = await s3.send(new ListObjectsV2Command(listParams));
 
-    if (!fileList.Contents || fileList.Contents.length === 0) {
-      console.log("❌ No files found in the S3 bucket.");
-      latestData = "No files found";
+    if (!response.Contents || response.Contents.length === 0) {
+      console.log("❌ No files found in S3.");
+      fileList = [];
       return;
     }
 
-    const latestFile = fileList.Contents.sort((a, b) => b.LastModified - a.LastModified)[0].Key;
-    console.log("📂 Fetching latest file:", latestFile);
+    fileList = response.Contents.map(file => file.Key);
+    console.log(`📂 Found ${fileList.length} files.`);
+  } catch (error) {
+    console.error("❌ Error fetching file list:", error);
+    fileList = [];
+  }
+}
 
-    const getParams = { Bucket: BUCKET_NAME, Key: latestFile };
+// 🔹 Fetch Data from S3 File
+async function fetchNextFile() {
+  try {
+    if (fileList.length === 0) {
+      console.log("⚠ No files available.");
+      return;
+    }
+
+    const fileToFetch = fileList[fileIndex];
+    console.log("📂 Fetching file:", fileToFetch);
+
+    const getParams = { Bucket: BUCKET_NAME, Key: fileToFetch };
     const response = await s3.send(new GetObjectCommand(getParams));
 
     if (!response.Body) {
-      console.error("❌ Error: Empty file response from S3.");
+      console.error("❌ Empty file response from S3.");
       latestData = "Empty file";
       return;
     }
 
-    latestData = await streamToString(response.Body); // Store raw content
-    console.log("✅ File fetched successfully!");
-    
+    latestData = await streamToString(response.Body);
+    console.log(`✅ File ${fileIndex + 1}/${fileList.length} fetched!`);
+
+    const jsonData = JSON.parse(latestData);
+
+    // 🔹 Check if IIF > 2, then send an alert
+    if (jsonData.iif > 2) {
+      const currentTime = Date.now();
+      if (currentTime - lastSentTime >= MESSAGE_INTERVAL) {
+        sendSOSAlert(jsonData.iif, jsonData.location);
+        lastSentTime = currentTime;
+      } else {
+        console.log("⏳ SMS limit reached. Skipping alert.");
+      }
+    }
+
+    fileIndex = (fileIndex + 1) % fileList.length;
   } catch (error) {
     console.error("❌ Error fetching file:", error);
     latestData = `Error: ${error.message}`;
   }
 }
 
-// Route to Get Raw Data
+// 🔹 Function to Send SOS Alert via AWS SNS
+const sendSOSAlert = async (iif, location) => {
+  try {
+    const params = {
+      Message: `🚨 ALERT! High Intensity Factor Detected! IIF = ${iif.toFixed(3)}, Location: ${location}`,
+      PhoneNumber: process.env.ALERT_PHONE_NUMBER, // Enter phone number in .env
+    };
+
+    const response = await sns.publish(params).promise();
+    console.log("✅ SOS Alert Sent via AWS SNS:", response.MessageId);
+  } catch (error) {
+    console.error("❌ Failed to send SOS alert:", error.message);
+  }
+};
+
+// 🔹 API Routes
+app.get("/api/files", (req, res) => {
+  res.json({ files: fileList });
+});
+
 app.get("/api/data", (req, res) => {
   if (!latestData) {
     return res.status(500).send("No data available yet");
@@ -399,11 +616,14 @@ app.get("/api/data", (req, res) => {
   res.send(latestData);
 });
 
-// Fetch Data Immediately and Every 10s
-fetchLatestFile().then(() => {
-  setInterval(fetchLatestFile, 10000);
+// 🔹 Start Fetching Data
+fetchFileList().then(() => {
+  fetchNextFile();
+  setInterval(fetchFileList, 10000);
+  setInterval(fetchNextFile, 10000);
 });
 
+// 🔹 Start Server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });

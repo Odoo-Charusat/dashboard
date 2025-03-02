@@ -5,7 +5,7 @@
     background-color: rgba(255, 255, 255, 0.1);
     border-radius: 10px;
     padding: 20px;
-    width: 100%;
+    width: 70vw;
     height: 100vh;
     box-sizing: border-box;
 }
@@ -19,21 +19,21 @@
 
 .map-container {
     flex-grow: 1;
-    width: 50%;
-    height: 50%;
+    width: 25%;
+    height: 25%;
     border-radius: 10px;
-    overflow: hidden;
+    overflow: scroll;
 }
 
 /* Ensure the Leaflet map fills the LiveMap div */
 .map-container .leaflet-container {
-    width: 50%;
-    height: 50%;
+    width: 25%;
+    height: 25%;
     border-radius: 10px;
 }
 
 /* Responsive adjustments */
-@media (min-width: 788px) {
+@media (min-width: 700px) {
     .map-container .leaflet-container {
         height: 50vh; 
         width: 40vw;

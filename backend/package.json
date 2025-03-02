@@ -11,10 +11,13 @@
   "description": "",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.758.0",
+    "@smithy/node-http-handler": "^4.0.3",
+    "aws-sdk": "^2.1692.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "mqtt": "^5.10.4",
-    "stream-to-string": "^1.2.1"
+    "stream-to-string": "^1.2.1",
+    "twilio": "^5.4.5"
   }
 }
