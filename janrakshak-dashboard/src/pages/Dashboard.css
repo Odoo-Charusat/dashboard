@@ -42,6 +42,8 @@
 
 /*the below one is working fine*/
 /* .dashboard {
+/*the below one is working fine*/
+/* .dashboard {
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -65,6 +67,7 @@
   gap: 20px;
   padding: 20px;
   overflow: auto; 
+  overflow: auto; 
 }
 
 @media (min-width: 788px) {
@@ -81,6 +84,7 @@
   background: rgba(255, 255, 255, 0.1); 
   border-radius: 10px;
   padding: 20px;
+  overflow: auto; 
   overflow: auto; 
 }
 

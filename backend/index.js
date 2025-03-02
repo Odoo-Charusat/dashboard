@@ -485,6 +485,8 @@ const AWS = require("aws-sdk");
 const streamToString = require("stream-to-string");
 const { NodeHttpHandler } = require("@smithy/node-http-handler"); 
 const https = require("https");
+const { NodeHttpHandler } = require("@smithy/node-http-handler"); 
+const https = require("https");
 
 dotenv.config();
 
@@ -512,6 +514,8 @@ const s3 = new S3Client({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
   },
   requestHandler: new NodeHttpHandler({ httpsAgent: agent }),
+  },
+  requestHandler: new NodeHttpHandler({ httpsAgent: agent }),
 });
 
 const BUCKET_NAME = "earthquake-sensor"; 
@@ -529,6 +533,8 @@ const MESSAGE_INTERVAL = 60 * 60 * 1000; // 1 hour
 async function fetchFileList() {
   try {
     console.log("⏳ Fetching file list from S3...");
+    const listParams = { Bucket: BUCKET_NAME, Prefix: FOLDER_PREFIX };
+    const response = await s3.send(new ListObjectsV2Command(listParams));
     const listParams = { Bucket: BUCKET_NAME, Prefix: FOLDER_PREFIX };
     const response = await s3.send(new ListObjectsV2Command(listParams));
 
@@ -557,6 +563,7 @@ async function fetchNextFile() {
     const fileToFetch = fileList[fileIndex];
     console.log("📂 Fetching file:", fileToFetch);
 
+    const getParams = { Bucket: BUCKET_NAME, Key: fileToFetch };
     const getParams = { Bucket: BUCKET_NAME, Key: fileToFetch };
     const response = await s3.send(new GetObjectCommand(getParams));
 

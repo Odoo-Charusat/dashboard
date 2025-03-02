@@ -21,6 +21,8 @@
     flex-grow: 1;
     width: 25%;
     height: 25%;
+    width: 25%;
+    height: 25%;
     border-radius: 10px;
     overflow: scroll;
 }
@@ -29,10 +31,13 @@
 .map-container .leaflet-container {
     width: 25%;
     height: 25%;
+    width: 25%;
+    height: 25%;
     border-radius: 10px;
 }
 
 /* Responsive adjustments */
+@media (min-width: 700px) {
 @media (min-width: 700px) {
     .map-container .leaflet-container {
         height: 50vh; 
